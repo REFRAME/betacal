@@ -16,7 +16,7 @@ This is a well-founded and easily implemented improvement on logistic calibratio
 
 ## Todo
 
- - Jupiter Notebook with usage tutorial
+ - Jupyter Notebook with usage tutorial
 
 ## License
 
