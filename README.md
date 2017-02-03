@@ -1,7 +1,6 @@
 # Beta calibration
 
-This is a framework to create and evaluate classifier models with confidence
-levels.
+This is a well-founded and easily implemented improvement on logistic calibration for binary classifiers.
 
 ### Dependencies
 
