@@ -50,18 +50,19 @@ def _beta_calibration(df, y, sample_weight=None):
 
 
 class _BetaCal(BaseEstimator, RegressorMixin):
-    """Beta regression model.
+    """Beta regression model with three parameters introduced in
+    Kull, M., Silva Filho, T.M. and Flach, P. Beta calibration: a well-founded
+    and easily implemented improvement on logistic calibration for binary
+    classifiers. AISTATS 2017.
 
     Attributes
     ----------
-    a_ : float
-        Difference between the alphas.
+    map_ : array-like, shape (3,)
+        Array containing the coefficients of the model (a and b) and the
+        midpoint m. Takes the form map_ = [a, b, m]
 
-    b_ : float
-        Difference between the betas.
-
-    m_ : float
-        Midpoint where the likelihood ratio is 1.
+    lr_ : sklearn.linear_model.LogisticRegression
+        Internal logistic regression used to train the model.
     """
     def fit(self, X, y, sample_weight=None):
         """Fit the model using X, y as training data.
@@ -91,7 +92,7 @@ class _BetaCal(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, S):
-        """Predict new data by linear interpolation.
+        """Predict new values.
 
         Parameters
         ----------
@@ -101,7 +102,7 @@ class _BetaCal(BaseEstimator, RegressorMixin):
         Returns
         -------
         S_ : array, shape (n_samples,)
-            The predicted data.
+            The predicted values.
         """
         df = column_or_1d(S).reshape(-1, 1)
         df = np.clip(df, 1e-16, 1-1e-16)
@@ -117,7 +118,7 @@ class _BetaCal(BaseEstimator, RegressorMixin):
         return self.lr_.predict_proba(x)[:, 1]
 
 
-def _betaAM_calibration(df, y, sample_weight=None):
+def _beta_am_calibration(df, y, sample_weight=None):
     warnings.filterwarnings("ignore")
 
     df = column_or_1d(df).reshape(-1, 1)
@@ -138,18 +139,19 @@ def _betaAM_calibration(df, y, sample_weight=None):
 
 
 class _BetaAMCal(BaseEstimator, RegressorMixin):
-    """Beta regression model.
+    """Beta regression model with two parameters (a and m, fixing a = b)
+    introduced in Kull, M., Silva Filho, T.M. and Flach, P. Beta calibration:
+    a well-founded and easily implemented improvement on logistic calibration
+    for binary classifiers. AISTATS 2017.
 
     Attributes
     ----------
-    a_ : float
-        Difference between the alphas.
+    map_ : array-like, shape (3,)
+        Array containing the coefficients of the model (a and b) and the
+        midpoint m. Takes the form map_ = [a, b, m], where a = b
 
-    b_ : float
-        Difference between the betas.
-
-    m_ : float
-        Midpoint where the likelihood ratio is 1.
+    lr_ : sklearn.linear_model.LogisticRegression
+        Internal logistic regression used to train the model.
     """
     def fit(self, X, y, sample_weight=None):
         """Fit the model using X, y as training data.
@@ -174,12 +176,12 @@ class _BetaAMCal(BaseEstimator, RegressorMixin):
         y = column_or_1d(y)
         X, y = indexable(X, y)
 
-        self.map_, self.lr_ = _beta2_calibration(X, y, sample_weight)
+        self.map_, self.lr_ = _beta_am_calibration(X, y, sample_weight)
 
         return self
 
     def predict(self, S):
-        """Predict new data by linear interpolation.
+        """Predict new values.
 
         Parameters
         ----------
@@ -189,7 +191,7 @@ class _BetaAMCal(BaseEstimator, RegressorMixin):
         Returns
         -------
         S_ : array, shape (n_samples,)
-            The predicted data.
+            The predicted values.
         """
         df = column_or_1d(S).reshape(-1, 1)
         df = np.clip(df, 1e-16, 1-1e-16)
@@ -198,7 +200,7 @@ class _BetaAMCal(BaseEstimator, RegressorMixin):
         return self.lr_.predict_proba(x)[:, 1]
 
 
-def _betaAB_calibration(df, y, sample_weight=None):
+def _beta_ab_calibration(df, y, sample_weight=None):
     warnings.filterwarnings("ignore")
 
     df = column_or_1d(df).reshape(-1, 1)
@@ -219,18 +221,19 @@ def _betaAB_calibration(df, y, sample_weight=None):
 
 
 class _BetaABCal(BaseEstimator, RegressorMixin):
-    """Beta regression model.
+    """Beta regression model with two parameters (a and b, fixing m = 0.5)
+    introduced in Kull, M., Silva Filho, T.M. and Flach, P. Beta calibration:
+    a well-founded and easily implemented improvement on logistic calibration
+    for binary classifiers. AISTATS 2017.
 
     Attributes
     ----------
-    a_ : float
-        Difference between the alphas.
+    map_ : array-like, shape (3,)
+        Array containing the coefficients of the model (a and b) and the
+        midpoint m. Takes the form map_ = [a, b, m], where m = 0.5
 
-    b_ : float
-        Difference between the betas.
-
-    m_ : float
-        Midpoint where the likelihood ratio is 1.
+    lr_ : sklearn.linear_model.LogisticRegression
+        Internal logistic regression used to train the model.
     """
     def fit(self, X, y, sample_weight=None):
         """Fit the model using X, y as training data.
@@ -255,12 +258,12 @@ class _BetaABCal(BaseEstimator, RegressorMixin):
         y = column_or_1d(y)
         X, y = indexable(X, y)
 
-        self.map_, self.lr_ = _beta05_calibration(X, y, sample_weight)
+        self.map_, self.lr_ = _beta_ab_calibration(X, y, sample_weight)
 
         return self
 
     def predict(self, S):
-        """Predict new data by linear interpolation.
+        """Predict new values.
 
         Parameters
         ----------
@@ -270,7 +273,7 @@ class _BetaABCal(BaseEstimator, RegressorMixin):
         Returns
         -------
         S_ : array, shape (n_samples,)
-            The predicted data.
+            The predicted values.
         """
         df = column_or_1d(S).reshape(-1, 1)
         df = np.clip(df, 1e-16, 1-1e-16)
