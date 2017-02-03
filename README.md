@@ -2,15 +2,15 @@
 
 This is a well-founded and easily implemented improvement on logistic calibration for binary classifiers.
 
-### Dependencies
+## Dependencies
 
-## Python
+### Python
 
 * [Numpy] - NumPy is the fundamental package for scientific computing with
   Python.
 * [Scikit-learn] - Machine Learning in Python.
 
-### Todos
+## Todos
 
  - Create package for R.
  - Create package for Matlab.
