@@ -16,7 +16,7 @@ All experiments can be parallelized using scoop, with instructions at the beginn
 * [Numpy] - NumPy is the fundamental package for scientific computing with
   Python.
 * [Scikit-learn] - Machine Learning in Python.
-* [Scoop] - Scalable COncurrent Operations in Python.
+* [Scoop] - Scalable COncurrent Operations in Python (optional).
 
 ## License
 
