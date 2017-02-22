@@ -17,16 +17,7 @@ from sklearn.svm import LinearSVC
 from sklearn.cross_validation import check_cv
 from sklearn.metrics.classification import _check_binary_probabilistic_predictions
 
-from sklearn.neighbors import KernelDensity
-from sklearn.mixture import GMM
-from dpgmm import DPGaussianMixtureModel
-
-from beta_calibration import _BetaCalibration
-from beta_calibration import _Beta2Calibration
-from beta_calibration import _BetaBinomialCalibration
-
-from gp import myGPC
-from beta_calibration import _Beta05Calibration
+from betacal import BetaCalibration
 
 
 class CalibratedClassifierCV(BaseEstimator, ClassifierMixin):
@@ -49,12 +40,14 @@ class CalibratedClassifierCV(BaseEstimator, ClassifierMixin):
         to offer more accurate predict_proba outputs. If cv=prefit, the
         classifier must have been fit already on data.
 
-    method : None, 'sigmoid', 'isotonic' or 'beta'
+    method : None, 'sigmoid', 'isotonic', 'beta', 'beta_am' or 'beta_ab'
         The method to use for calibration. Can be 'sigmoid' which
-        corresponds to Platt's method or 'isotonic' which is a
-        non-parameteric approach. It is not advised to use isotonic calibration
-        with too few calibration samples ``(<<1000)`` since it tends to overfit.
-        Use sigmoids (Platt's calibration) in this case.
+        corresponds to Platt's method, 'isotonic' which is a
+        non-parameteric approach or 'beta', 'beta_am' or 'beta_ab' which
+        correspond to three different beta calibration methods. It is
+        not advised to use  isotonic  calibration with too few calibration
+        samples ``(<<1000)`` since it tends to overfit.
+        Use beta models in this case.
 
     cv : integer, cross-validation generator, iterable or "prefit", optional
         Determines the cross-validation splitting strategy.
@@ -282,10 +275,11 @@ class _CalibratedClassifier(object):
         to offer more accurate predict_proba outputs. No default value since
         it has to be an already fitted estimator.
 
-    method : 'sigmoid' | 'isotonic'
+    method : 'sigmoid' | 'isotonic' | 'beta' | 'beta_am' | 'beta_ab'
         The method to use for calibration. Can be 'sigmoid' which
-        corresponds to Platt's method or 'isotonic' which is a
-        non-parameteric approach based on isotonic regression.
+        corresponds to Platt's method, 'isotonic' which is a
+        non-parameteric approach based on isotonic regression or 'beta', 
+        'beta_am' or 'beta_ab' which correspond to beta calibration methods.
 
     References
     ----------
@@ -301,7 +295,7 @@ class _CalibratedClassifier(object):
     .. [4] Predicting Good Probabilities with Supervised Learning,
            A. Niculescu-Mizil & R. Caruana, ICML 2005
     """
-    def __init__(self, base_estimator, method='sigmoid',
+    def __init__(self, base_estimator, method='beta',
                  score_type=None):
         self.base_estimator = base_estimator
         self.method = method
@@ -372,24 +366,15 @@ class _CalibratedClassifier(object):
             elif self.method == 'sigmoid':
                 calibrator = _SigmoidCalibration()
             elif self.method == 'beta':
-                calibrator = _BetaCalibration()
-            elif self.method == 'beta2':
-                calibrator = _Beta2Calibration()
-            elif self.method == 'betabinomial':
-                calibrator = _BetaBinomialCalibration()
-            elif self.method == 'beta05':
-                calibrator = _Beta05Calibration()
-            elif self.method == 'gmm':
-                calibrator = _GMMCalibration()
-            elif self.method == 'kde':
-                calibrator = _KDECalibration()
-            elif self.method == 'gpc':
-                calibrator = _GaussianProcessCalibration()
+                calibrator = BetaCalibration(parameters="abm")
+            elif self.method == 'beta_am':
+                calibrator = BetaCalibration(parameters="am")
+            elif self.method == 'beta_ab':
+                calibrator = BetaCalibration(parameters="ab")
             else:
                 raise ValueError('method should be None, "sigmoid", '
-                                 '"isotonic", "beta", "beta2", "beta05",'
-                                 '"betabinomial", "gmm", '
-                                 'or "kde". Got %s.' % self.method)
+                                 '"isotonic", "beta", "beta2" or "beta05". '
+                                 'Got %s.' % self.method)
             calibrator.fit(this_df, Y[:, k], sample_weight)
             self.calibrators_.append(calibrator)
 
@@ -479,72 +464,6 @@ class _CalibratedClassifier(object):
         return proba
 
 
-def _sigmoid_calibration(df, y, sample_weight=None):
-    """Probability Calibration with sigmoid method (Platt 2000)
-
-    Parameters
-    ----------
-    df : ndarray, shape (n_samples,)
-        The decision function or predict proba for the samples.
-
-    y : ndarray, shape (n_samples,)
-        The targets.
-
-    sample_weight : array-like, shape = [n_samples] or None
-        Sample weights. If None, then samples are equally weighted.
-
-    Returns
-    -------
-    a : float
-        The slope.
-
-    b : float
-        The intercept.
-
-    References
-    ----------
-    Platt, "Probabilistic Outputs for Support Vector Machines"
-    """
-    df = column_or_1d(df)
-    y = column_or_1d(y)
-
-    F = df  # F follows Platt's notations
-    tiny = np.finfo(np.float).tiny  # to avoid division by 0 warning
-
-    # Bayesian priors (see Platt end of section 2.2)
-    prior0 = float(np.sum(y <= 0))
-    prior1 = y.shape[0] - prior0
-    T = np.zeros(y.shape)
-    T[y > 0] = 1#(prior1 + 1.) / (prior1 + 2.)
-    T[y <= 0] = 0#1. / (prior0 + 2.)
-    T1 = 1. - T
-
-    def objective(AB):
-        # From Platt (beginning of Section 2.2)
-        E = np.exp(AB[0] * F + AB[1])
-        P = 1. / (1. + E)
-        l = -(T * np.log(P + tiny) + T1 * np.log(1. - P + tiny))
-        if sample_weight is not None:
-            return (sample_weight * l).sum()
-        else:
-            return l.sum()
-
-    def grad(AB):
-        # gradient of the objective function
-        E = np.exp(AB[0] * F + AB[1])
-        P = 1. / (1. + E)
-        TEP_minus_T1P = P * (T * E - T1)
-        if sample_weight is not None:
-            TEP_minus_T1P *= sample_weight
-        dA = np.dot(TEP_minus_T1P, F)
-        dB = np.sum(TEP_minus_T1P)
-        return np.array([dA, dB])
-
-    AB0 = np.array([0., log((prior0 + 1.) / (prior1 + 1.))])
-    AB_ = fmin_bfgs(objective, AB0, fprime=grad, disp=False)
-    return AB_[0], AB_[1]
-
-
 class _SigmoidCalibration(BaseEstimator, RegressorMixin):
     """Sigmoid regression model.
 
@@ -580,7 +499,6 @@ class _SigmoidCalibration(BaseEstimator, RegressorMixin):
         X, y = indexable(X, y)
         self.lr = LogisticRegression(C=99999999999)
         self.lr.fit(X.reshape(-1, 1), y)
-        # self.a_, self.b_ = _sigmoid_calibration(X, y, sample_weight)
         return self
 
     def predict(self, T):
@@ -597,7 +515,6 @@ class _SigmoidCalibration(BaseEstimator, RegressorMixin):
             The predicted data.
         """
         T = column_or_1d(T)
-        # return 1. / (1. + np.exp(self.a_ * T + self.b_))
         return self.lr.predict_proba(T.reshape(-1, 1))[:, 1]
 
 
@@ -644,174 +561,6 @@ class _DummyCalibration(BaseEstimator, RegressorMixin):
         """
         return T
 
-class _GaussianProcessCalibration(BaseEstimator, RegressorMixin):
-    def fit(self, X, y, sample_weight=None):
-        self.model = myGPC()
-        if len(X) > 200:
-            subsample_idx = np.random.choice(len(X), size=200)
-            X = X[subsample_idx]
-            y = y[subsample_idx]
-        self.model.fit(X, y)
-        return self
-
-    def predict(self, T):
-        return self.model.predict_proba(T)[:,0]
-
-
-class _GMMCalibration(BaseEstimator, RegressorMixin):
-    """Gaussian Mixture Model calibration.
-
-    """
-    def fit(self, X, y, sample_weight=None):
-        """Fit the model using X, y as training data.
-
-        Parameters
-        ----------
-        X : array-like, shape (n_samples,)
-            Training data.
-
-        y : array-like, shape (n_samples,)
-            Training target.
-
-        sample_weight : array-like, shape = [n_samples] or None
-            Sample weights. If None, then samples are equally weighted.
-
-        Returns
-        -------
-        self : object
-            Returns an instance of self.
-        """
-        # TODO : normalize the scores to mu=0, std=1
-        X = column_or_1d(X).reshape(-1,1)
-        y = column_or_1d(y)
-        X, y = indexable(X, y)
-
-        prior_1 = np.true_divide(y.sum(),len(y))
-        self.priors = np.array([1-prior_1, prior_1])
-        self.classes_ = np.unique(y)
-
-        self.des = {}
-        for c in self.classes_:
-            n_components = 5
-            if n_components > sum(y==c):
-                n_components = sum(y==c)
-            self.des[c] = GMM(n_components=n_components)
-            #self.des[c] = DPGaussianMixtureModel(K=n_components)
-            self.des[c].fit(X[y==c])
-
-        return self
-
-    def predict(self, T):
-        """Predict new data by linear interpolation.
-
-        Parameters
-        ----------
-        T : array-like, shape (n_samples,)
-            Data to predict from.
-
-        Returns
-        -------
-        T_ : array, shape (n_samples,)
-            The predicted data.
-        """
-        # TODO : apply learned normalization
-        T = column_or_1d(T).reshape(-1,1)
-
-        de_scores = np.empty((len(T),len(self.classes_)))
-        for i, de in enumerate(self.des.values()):
-            if type(de) in [GMM]:
-                de_scores[:,i] = np.exp(de.score(T.reshape(-1,1)))
-            elif type(de) in [DPGaussianMixtureModel]:
-                de_scores[:,i] = de.score_samples(T.reshape(-1,1))
-            else:
-                de_scores[:,i] = np.exp(de.score_samples(T.reshape(-1,1)))
-
-        joint_proba = de_scores*self.priors
-        posterior_proba = joint_proba/joint_proba.sum(axis=1).reshape(-1,1)
-        return posterior_proba[:,1]
-
-
-class _KDECalibration(BaseEstimator, RegressorMixin):
-    """Kernel Density Estimation calibration.
-
-    Attributes
-    ----------
-    kernel : float
-        The slope.
-
-    bandwidth : float
-        The intercept.
-    """
-    def fit(self, X, y, sample_weight=None, kernel='gaussian', bandwidth='default'):
-        """Fit the model using X, y as training data.
-
-        Parameters
-        ----------
-        X : array-like, shape (n_samples,)
-            Training data.
-
-        y : array-like, shape (n_samples,)
-            Training target.
-
-        sample_weight : array-like, shape = [n_samples] or None
-            Sample weights. If None, then samples are equally weighted.
-
-        Returns
-        -------
-        self : object
-            Returns an instance of self.
-        """
-        self.kernel = kernel
-        self.bandwidth = bandwidth
-
-        X = column_or_1d(X).reshape(-1,1)
-        y = column_or_1d(y)
-        X, y = indexable(X, y)
-
-        prior_1 = np.true_divide(y.sum(),len(y))
-        self.priors = np.array([1-prior_1, prior_1])
-        self.classes_ = np.unique(y)
-
-        if bandwidth == 'default':
-            s_min = np.min(X)
-            s_max = np.max(X)
-            self.bandwidth = (np.abs(s_max-s_min)+1)/20
-
-        self.des = {}
-        for c in self.classes_:
-            self.des[c] = KernelDensity(kernel=self.kernel,
-                                    bandwidth=self.bandwidth)
-            self.des[c].fit(X[y==c])
-
-        return self
-
-    def predict(self, T):
-        """Predict new data by linear interpolation.
-
-        Parameters
-        ----------
-        T : array-like, shape (n_samples,)
-            Data to predict from.
-
-        Returns
-        -------
-        T_ : array, shape (n_samples,)
-            The predicted data.
-        """
-        T = column_or_1d(T).reshape(-1,1)
-
-        de_scores = np.empty((len(T),len(self.classes_)))
-        for i, de in enumerate(self.des.values()):
-            if type(de) in [GMM]:
-                de_scores[:,i] = np.exp(de.score(T.reshape(-1,1)))
-            elif type(de) in [DPGaussianMixtureModel]:
-                de_scores[:,i] = de.score_samples(T.reshape(-1,1))
-            else:
-                de_scores[:,i] = np.exp(de.score_samples(T.reshape(-1,1)))
-
-        joint_proba = de_scores*self.priors
-        posterior_proba = joint_proba/joint_proba.sum(axis=1).reshape(-1,1)
-        return posterior_proba[:,1]
 
 def calibration_curve(y_true, y_prob, normalize=False, n_bins=5):
     """Compute true and predicted probabilities for a calibration curve.

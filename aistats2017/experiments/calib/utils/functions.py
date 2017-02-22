@@ -23,17 +23,6 @@ def get_sets(x, y, test_fold_id, test_folds):
 
     return [x_train, y_train, x_test, y_test]
 
-# def plot_reliability_diagram(probas, y, labels):
-#     for i, label in enumerate(labels):
-#         p = np.clip(probas[i], 1e-16, 1 - 1e-16)
-#         ys, xs = calibration_curve(y, p, n_bins=10)
-#         plt.plot(xs, ys, '.-', label=label)
-#     plt.plot([0, 1], [0, 1], '--', label='perfect')
-#     plt.xlim([0, 1])
-#     plt.ylim([0, 1])
-#     plt.legend(loc=2)
-#     plt.show()
-
 
 # TODO: MPN need to join *to_latex functions
 def table_to_latex(datasets, methods, table, max_is_better=True, caption=''):

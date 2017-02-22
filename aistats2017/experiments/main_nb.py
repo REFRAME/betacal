@@ -18,14 +18,10 @@ from scoop import futures
 from calib.utils.calibration import get_calibrated_scores
 from calib.utils.calibration import calibrate
 from calib.utils.calibration import cv_calibration
-from calib.utils.calibration import cv_calibration_timed
 from calib.utils.dataframe import MyDataFrame
 from calib.utils.functions import cross_entropy
 from calib.utils.functions import get_sets
 from calib.utils.functions import table_to_latex
-from calib.utils.plots import plot_reliability_diagram
-from calib.utils.plots import plot_reliability_map
-from calib.utils.plots import plot_niculescu_mizil_map
 
 # Our datasets module
 from data_wrappers.datasets import Data
@@ -34,15 +30,14 @@ from data_wrappers.datasets import datasets_li2014
 from data_wrappers.datasets import datasets_hempstalk2008
 from data_wrappers.datasets import datasets_others
 
-methods = [None, 'sigmoid', 'isotonic', 'beta', 'beta2', 'beta05']
-#methods = [None, 'sigmoid', 'beta', 'beta2']
+methods = [None, 'sigmoid', 'isotonic', 'beta', 'beta_am', 'beta_ab']
 seed_num = 42
 mc_iterations = 10
 n_folds = 5
 results_path = 'results'
 
 columns = ['dataset', 'method', 'mc', 'test_fold', 'acc', 'loss', 'brier',
-           'time', 'c_probas']
+           'c_probas']
 
 
 def compute_all(args):
@@ -53,9 +48,6 @@ def compute_all(args):
     df = MyDataFrame(columns=columns)
     test_folds = skf.test_folds
     class_counts = np.bincount(dataset.target)
-    classifiers = None
-    mc_save = 6
-    test_fold_save = 1
     if np.alen(class_counts) > 2:
         majority = np.argmax(class_counts)
         t = np.zeros_like(dataset.target)
@@ -67,63 +59,16 @@ def compute_all(args):
                                                     t,
                                                     test_fold,
                                                     test_folds)
-        # accs, losses, briers, mean_probas, cl = cv_calibration(GaussianNB(),
-        #                                                    methods,
-        #                                                x_train, y_train,
-        #                                                x_test, y_test, cv=3)
-        accs, losses, briers, mean_probas, cl, times = cv_calibration_timed(
-                                                        GaussianNB(),
+        accs, losses, briers, mean_probas, cl = cv_calibration(GaussianNB(),
                                                            methods,
                                                        x_train, y_train,
                                                        x_test, y_test, cv=3)
-        if mc == mc_save and test_fold == test_fold_save:
-            classifiers = cl
+
         for method in methods:
             m_text = 'None' if method is None else method
             df = df.append_rows([[name, m_text, mc, test_fold,
                                   accs[method], losses[method], briers[method],
-                                  times[method], mean_probas[method]]])
-        # for method in methods:
-        #     acc, loss, c_probas = calibrate(
-        #             x_train, y_train, x_test, y_test, method=method)
-        #     method = 'None' if method is None else method
-        #     df = df.append_rows([[name, method, mc, test_fold,
-        #                           acc, loss, c_probas]])
-
-    # if mc == mc_save:
-    #     test_fold = test_fold_save
-    #     x_train, y_train, x_test, y_test = get_sets(dataset.data,
-    #                                                 t,
-    #                                                 test_fold,
-    #                                                 test_folds)
-    #     methods_text = ['uncalib' if m is None else m for m in methods]
-    #     probas = df[df.test_fold == test_fold].c_probas
-    #     probas = [p for p in probas]
-    #     fig = plot_reliability_diagram(probas, y_test, methods_text,
-    #                                    original_first=True)
-    #     if not os.path.exists(results_path):
-    #         os.makedirs(results_path)
-    #     fig.savefig(os.path.join(results_path,
-    #                 '{}_mc{}_fold{}.pdf'.format(name, mc, test_fold)))
-    #
-    #     linspace = np.linspace(0, 1, 100)
-    #     scores = [s for s in df[np.logical_and(df.test_fold == test_fold,
-    #                                df.method == 'None')].c_probas][0]
-    #     idx = scores.argsort()
-    #     scores = scores[idx]
-    #     y_test_2 = y_test[idx]
-    #
-    #     probas = get_calibrated_scores(classifiers, methods, linspace)
-    #     # scores = [scores for p in len(methods_text)]
-    #
-    #     fig_map = plot_reliability_map(probas, [scores, y_test_2, linspace],
-    #                                    methods_text,
-    #                                    original_first=False, alpha=1)
-    #
-    #     if not os.path.exists(results_path):
-    #         os.makedirs(results_path)
-    #     fig_map.savefig(os.path.join(results_path,
-    #                     '{}_mc{}_fold{}_map.pdf'.format(name, mc, test_fold)))
+                                  mean_probas[method]]])
     return df
 
 
@@ -134,9 +79,6 @@ if __name__ == '__main__':
     df_all = MyDataFrame(columns=columns)
 
     data = Data(dataset_names=dataset_names)
-    # for name, dataset in data.datasets.iteritems():
-    #     if name in ['letter', 'shuttle']:
-    #         dataset.reduce_number_instances(0.1)
 
     for name, dataset in data.datasets.iteritems():
         df = MyDataFrame(columns=columns)
@@ -200,14 +142,5 @@ if __name__ == '__main__':
         briers = table.as_matrix()[:, :len(methods_rem)]
         print friedmanchisquare(*[briers[:, x] for x in np.arange(briers.shape[1])])
         table.to_csv(os.path.join(results_path, 'main_brier' + str(methods_rem) + '.csv'))
-
-        print("-#-#-#-#-#-#-#-#-#-#-#-TIME-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-")
-        table = df_rem.pivot_table(index=['dataset'], columns=['method'],
-                                   values=['time'], aggfunc=[np.mean, np.std])
-        table_to_latex(dataset_names, methods_rem, table, max_is_better=False)
-        times = table.as_matrix()[:, :len(methods_rem)]
-        print friedmanchisquare(*[times[:, x] for x in np.arange(times.shape[1])])
-        table.to_csv(os.path.join(results_path, 'main_time' + str(methods_rem) +
-                                  '.csv'))
 
         print("-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-")
