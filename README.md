@@ -12,7 +12,7 @@ In this paper we solve all these problems with a richer class of calibration map
 
 We provide usage tutorials for beta calibration in [Python] and [R].
 
-* Python tutorial 
+* [Python tutorial] 
 * R tutorial
 
 # Citing Beta Calibration
@@ -30,3 +30,4 @@ If you are having problems executing the experiments or the tutorials, do not he
    [Python]: <https://www.python.org/>
    [R]: <https://www.r-project.org/>
    [open an issue]: <https://github.com/REFRAME/betacal/issues>
+   [Python tutorial]: <https://github.com/REFRAME/betacal/blob/master/python/tutorial/Python%20tutorial.ipynb>
