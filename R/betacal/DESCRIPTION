@@ -2,15 +2,10 @@ Package: betacal
 Type: Package
 Title: Beta Calibration
 Version: 0.1.0
-Author: Telmo de Menezes e Silva Filho
-Maintainer: Telmo de Menezes e Silva Filho <tmfilho@gmail.com>
-Description: This package provides a beta_calibration function which 
-    allows the user to fit any of our three proposed beta calibration 
-    models, following "Kull, M., Silva Filho, T.M., Flach, P. Beta 
-    calibration: a well-founded and easily implemented improvement on logistic 
-    calibration for binary classifiers, AISTATS 2017 (in press)". The package 
-    also provides a beta_predict function to obtaincalibrated probabilities
-    from the fitted model.
-License: MIT
+Author: Telmo M Silva Filho and Meelis Kull
+Maintainer: Telmo M Silva Filho <tmfilho@gmail.com>
+Description: Fit beta calibration models and obtain calibrated probabilities from
+    them.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

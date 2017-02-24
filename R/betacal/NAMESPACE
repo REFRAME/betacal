@@ -1,1 +1,3 @@
 exportPattern("^[[:alpha:]]+")
+
+importFrom("stats", "binomial", "glm", "predict", "uniroot")

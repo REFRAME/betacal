@@ -1,7 +1,5 @@
-source("R/pclip.r")
-
 beta_predict <- function(p, calib){
-  p <- pclip(p)
+  p <- pmax(1e-16, pmin(p, 1-1e-16))
   d <- data.frame(p)
   if (calib$parameters == "abm"){
     d$lp <- log(p)

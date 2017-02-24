@@ -1,7 +1,5 @@
-source("R/pclip.r")
-
 beta_calibration <- function(p, y, parameters="abm"){
-  p <- pclip(p)
+  p <- pmax(1e-16, pmin(p, 1-1e-16))
   if (parameters == "abm"){
     d <- data.frame(y)
     d$lp <- log(p)
