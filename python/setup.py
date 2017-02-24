@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='betacal',
-      version='0.2.2',
+      version='0.2.3',
       description='Beta calibration',
       url='https://github.com/REFRAME/betacal',
       author='tmfilho',
