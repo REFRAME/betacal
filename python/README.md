@@ -14,10 +14,6 @@ This is a well-founded and easily implemented improvement on logistic calibratio
  - Alternatively, download from here, cd to the folder and use "pip install ."
  - Once installed, import the package using "import betacal" 
 
-## Todo
-
- - Jupyter Notebook with usage tutorial
-
 ## License
 
 MIT
