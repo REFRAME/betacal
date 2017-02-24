@@ -1,4 +1,6 @@
-beta_calibration <- function(p, y, parameters){
+source("R/pclip.r")
+
+beta_calibration <- function(p, y, parameters="abm"){
   p <- pclip(p)
   if (parameters == "abm"){
     d <- data.frame(y)
@@ -57,20 +59,3 @@ beta_calibration <- function(p, y, parameters){
     stop("Unknown parameters. Expected abm, am or ab.")
   }
 }
-
-beta_predict <- function(p, calib){
-  p <- pclip(p)
-  d <- data.frame(p)
-  if (calib$parameters == "abm"){
-    d$lp <- log(p)
-    d$l1p <- -log(1-p)
-  }else if (calib$parameters == "am"){
-    d$lp <- log(p / (1 - p))
-  }else if (calib$parameters == "ab"){
-    d$lp <- log(2 * p)
-    d$l1p <- log(2*(1-p))
-  }
-  return(predict(calib$model, newdata=d, type="response"))
-}
-
-pclip <- function(vec, LB=1e-16, UB=1-1e-16) pmax(LB, pmin( vec, UB))

@@ -1,6 +1,6 @@
 # Beta calibration - Python package
 
-This is a well-founded and easily implemented improvement on logistic calibration for binary classifiers.
+This package provides a BetaCalibration class which allows the user to fit any of our three proposed beta calibration models.
 
 ## Dependencies
 
