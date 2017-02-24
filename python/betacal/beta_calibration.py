@@ -43,7 +43,7 @@ def _beta_calibration(df, y, sample_weight=None):
         b = coefs[1]
     inter = lr.intercept_[0]
 
-    m = minimize_scalar(lambda(mh): np.abs(-b*np.log(1.-mh)-a*np.log(mh)-inter),
+    m = minimize_scalar(lambda(mh): np.abs(b*np.log(1.-mh)-a*np.log(mh)-inter),
                         bounds=[0, 1], method='Bounded').x
     map = [a, b, m]
     return map, lr
