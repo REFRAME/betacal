@@ -25,6 +25,7 @@ We provide usage tutorials for beta calibration in Python and R.
 # Citing Beta Calibration
 
 If you want to cite this work, please use the following citation format: 
+
 _Kull, M., Silva Filho, T.M. and Flach, P., Beta calibration: a well-founded and easily implemented improvement on logistic calibration for binary classifiers. AISTATS 2017. (in press)_.
 
 # Support or Contact
