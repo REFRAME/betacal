@@ -19,8 +19,6 @@ beta_calibration <- function(p, y, parameters="abm"){
       b <- 0
     }
     inter <- as.numeric(fit$coefficients['(Intercept)'])
-    print(-b*log(1-1e-16)+a*log(1e-16)-inter)
-    print(-b*log(1e-16)+a*log(1-1e-16)-inter)
     m <- uniroot(function(mh) b*log(1-mh)-a*log(mh)-inter,c(1e-16,1-1e-16))$root
 
     calibration <- list("map" = c(a,b,m), "model" = fit, "parameters" = parameters)
