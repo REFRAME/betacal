@@ -8,16 +8,24 @@ For optimal decision making under variable class distributions and misclassifica
 
 In this paper we solve all these problems with a richer class of calibration maps based on the Beta distribution. We derive the method from first principles and show that fitting it is as easy as fitting a logistic curve. Extensive experiments show that beta calibration is superior to logistic calibration for naive Bayes and Adaboost.
 
+# Packages
+
+To make it easier for practitioners to experiment with our method, we have developed packages for [Python] and [R].
+
+* [Python package] 
+* [R package]
+
 # Tutorials
 
-We provide usage tutorials for beta calibration in [Python] and [R].
+We provide usage tutorials for beta calibration in Python and R.
 
 * [Python tutorial] 
-* R tutorial
+* [R tutorial]
 
 # Citing Beta Calibration
 
-If you want to cite this work, please use the following citation format 
+If you want to cite this work, please use the following citation format: 
+_Kull, M., Silva Filho, T.M. and Flach, P., Beta calibration: a well-founded and easily implemented improvement on logistic calibration for binary classifiers. AISTATS 2017. (in press)_.
 
 # Support or Contact
 
@@ -31,3 +39,6 @@ If you are having problems executing the experiments or the tutorials, do not he
    [R]: <https://www.r-project.org/>
    [open an issue]: <https://github.com/REFRAME/betacal/issues>
    [Python tutorial]: <https://github.com/REFRAME/betacal/blob/master/python/tutorial/Python%20tutorial.ipynb>
+[R tutorial]: <https://github.com/REFRAME/betacal/blob/master/R/tutorial/Rtutorial.pdf>
+[Python package]: <https://pypi.python.org/pypi/betacal>
+[R package]: <https://cran.r-project.org/web/packages/betacal/index.html>
