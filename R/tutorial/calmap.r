@@ -5,8 +5,9 @@ library(reshape2)
 plot_calibration_map <- function(scores_set, info, legend_set, color_set, alpha=1){
   n_lines <- length(legend_set)
   sizes <- seq(1.5, 0.5, length.out = n_lines)
-  hist_tot <- hist(info$prob, breaks=11, plot = FALSE)
-  hist_pos <- hist(info$prob[info$labels == 1], breaks=11, plot = FALSE)
+  bins <- seq(0, 1, length.out = 11)
+  hist_tot <- hist(info$prob, breaks=bins, plot = FALSE)
+  hist_pos <- hist(info$prob[info$labels == 1], breaks=bins, plot = FALSE)
   centers <- hist_tot$mids
   empirical <- (hist_pos$counts+alpha) / (hist_tot$counts+2*alpha)
 

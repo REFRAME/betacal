@@ -12,7 +12,6 @@ This is a well-founded and easily implemented improvement on logistic calibratio
 
 ## Todos
 
- - Create package for R.
  - Create package for Matlab.
 
 ## License
