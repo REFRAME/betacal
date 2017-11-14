@@ -13,7 +13,8 @@ def _beta_calibration(df, y, sample_weight=None):
     warnings.filterwarnings("ignore")
 
     df = column_or_1d(df).reshape(-1, 1)
-    df = np.clip(df, 1e-16, 1-1e-16)
+    eps = np.finfo(df.dtype).eps
+    df = np.clip(df, eps, 1-eps)
     y = column_or_1d(y)
 
     x = np.hstack((df, 1. - df))
