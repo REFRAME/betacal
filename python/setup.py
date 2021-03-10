@@ -10,6 +10,6 @@ setup(name='betacal',
       packages=['betacal'],
       install_requires=[
           'numpy',
-          'sklearn',
+          'scikit-learn',
       ],
       zip_safe=False)
