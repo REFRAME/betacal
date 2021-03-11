@@ -1,3 +1,5 @@
+## This is an outdated version of the code. For the new version please refer to https://github.com/betacal/python
+
 # Beta calibration - Python package
 
 This package provides a BetaCalibration class which allows the user to fit any of our three proposed beta calibration models.
